@@ -1,0 +1,31 @@
+<head>
+	<script src="https://s3.amazonaws.com/stitch-sdks/js/bundles/4.0.13/stitch.js"></script>
+	<link href="main.css" rel="stylesheet">
+</head>
+<body>
+	<div id="confirm-info" class="task-info"></div>
+	<script>
+			function setConfirmInfo(message) {
+				document.getElementById("confirm-info").innerHTML = 
+					"<h1>" + message + "</h1>";
+			}
+	
+			// Parse the URL query parameters
+			const url = window.location.search;
+			const params = new URLSearchParams(url);
+			const appId = params.get('stitchApp');
+			const token = params.get('token');
+			const tokenId = params.get('tokenId');
+	
+			// Confirm the user's email/password account
+			stitch.Stitch.initializeDefaultAppClient(appId);
+			const emailPassClient = stitch.Stitch.defaultAppClient.auth
+			  .getProviderClient(stitch.UserPasswordAuthProviderClient.factory);
+	
+			emailPassClient.confirmUser(token, tokenId).then(() => {
+				setConfirmInfo("Successfully confirmed your email address!");
+			}).catch(err => {
+				setConfirmInfo("Failed to confirm your email address: " + err);
+			});
+		</script>
+</body>
