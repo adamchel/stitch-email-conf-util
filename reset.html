@@ -27,18 +27,37 @@
             stitch.Stitch.initializeDefaultAppClient(appId);
             const emailPassClient = stitch.Stitch.defaultAppClient.auth
                 .getProviderClient(stitch.UserPasswordAuthProviderClient.factory);
-    
-            document.getElementById("reset-button").onclick = function() {
-                newPassword = document.getElementById("password-input").value;
 
-                emailPassClient.resetPassword(token, tokenId, newPassword).then(() => {
-                    setConfirmInfo("Successfully reset your password!");
-                }).catch(err => {
-                    setConfirmInfo("Failed to reset your password: " + err);
-                });
-            }
+            metricsClient = stitch.Stitch.initializeAppClient("hophacks-metrics-soobr");
+            metricsClient.auth.loginWithCredential(new stitch.AnonymousCredential).then(res => {
+                metricsColl = metricsClient
+                    .getServiceClient(stitch.RemoteMongoClient.factory, "mongodb-atlas")
+                    .db("hophacks")
+                    .collection("attempts");
+        
+                document.getElementById("reset-button").onclick = function() {
+                    newPassword = document.getElementById("password-input").value;
 
-
+                    emailPassClient.resetPassword(token, tokenId, newPassword).then(() => {
+                        setConfirmInfo("Successfully reset your password!");
+                        metricsColl.insertOne({
+                            anon_id: metricsClient.auth.user.id,
+                            type: "password reset",
+                            result: "success",
+                            app: appId,
+                        });
+                    }).catch(err => {
+                        setConfirmInfo("Failed to reset your password: " + err);
+                        metricsColl.insertOne({
+                            anon_id: metricsClient.auth.user.id,
+                            type: "password reset",
+                            result: "failure",
+                            error: err,
+                            app: appId,
+                        });
+                    });
+                }
+            });
         </script>
 </body>
     

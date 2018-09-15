@@ -21,11 +21,33 @@
 			stitch.Stitch.initializeDefaultAppClient(appId);
 			const emailPassClient = stitch.Stitch.defaultAppClient.auth
 			  .getProviderClient(stitch.UserPasswordAuthProviderClient.factory);
-	
-			emailPassClient.confirmUser(token, tokenId).then(() => {
-				setConfirmInfo("Successfully confirmed your email address!");
-			}).catch(err => {
-				setConfirmInfo("Failed to confirm your email address: " + err);
+
+			metricsClient = stitch.Stitch.initializeAppClient("hophacks-metrics-soobr");
+			metricsClient.auth.loginWithCredential(new stitch.AnonymousCredential).then(res => {
+				metricsColl = metricsClient
+					.getServiceClient(stitch.RemoteMongoClient.factory, "mongodb-atlas")
+					.db("hophacks")
+					.collection("attempts");
+		
+				emailPassClient.confirmUser(token, tokenId).then(() => {
+					setConfirmInfo("Successfully confirmed your email address!");
+					metricsColl.insertOne({
+						anon_id: metricsClient.auth.user.id,
+						type: "email confirmation",
+						result: "success",
+						app: appId,
+					})
+				}).catch(err => {
+					setConfirmInfo("Failed to confirm your email address: " + err);
+					metricsColl.insertOne({
+						anon_id: metricsClient.auth.user.id,
+						type: "email confirmation",
+						result: "failure",
+						error: err,
+						app: appId,
+					})
+				});
 			});
+
 		</script>
 </body>
